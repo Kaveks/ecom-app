@@ -2,8 +2,9 @@ package org.example.ecomapp;
 
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 @Service
 public class UserService implements UserServiceInterface {
@@ -59,7 +60,8 @@ public class UserService implements UserServiceInterface {
             return null;
         }
 
-        // Update only the fields supplied by the client.
+        // Old implementation using if conditions
+        /*
         if (updateUser.getFirstName() != null) {
             existingUser.setFirstName(updateUser.getFirstName());
         }
@@ -68,12 +70,51 @@ public class UserService implements UserServiceInterface {
             existingUser.setLastName(updateUser.getLastName());
         }
 
-        // Old List-based implementation:
-        // The modified object was already in the userList,
-        // so updating its fields updated the in-memory object.
+        if (updateUser.getEmail() != null) {
+            existingUser.setEmail(updateUser.getEmail());
+        }
+
+        if (updateUser.getPhone() != null) {
+            existingUser.setPhone(updateUser.getPhone());
+        }
+
+        if (updateUser.getRole() != null) {
+            existingUser.setRole(updateUser.getRole());
+        }
+        */
+
+        // Current implementation using a Map
+        Map<String, Consumer<User>> fieldUpdaters = Map.of(
+                "firstName", user -> user.setFirstName(updateUser.getFirstName()),
+                "lastName", user -> user.setLastName(updateUser.getLastName()),
+                "email", user -> user.setEmail(updateUser.getEmail()),
+                "phone", user -> user.setPhone(updateUser.getPhone()),
+                "role", user -> user.setRole(updateUser.getRole())
+        );
+
+        Map<String, Object> updatedFields = Map.of(
+                "firstName", updateUser.getFirstName() != null
+                        ? updateUser.getFirstName() : "",
+                "lastName", updateUser.getLastName() != null
+                        ? updateUser.getLastName() : "",
+                "email", updateUser.getEmail() != null
+                        ? updateUser.getEmail() : "",
+                "phone", updateUser.getPhone() != null
+                        ? updateUser.getPhone() : "",
+                "role", updateUser.getRole() != null
+                        ? updateUser.getRole() : ""
+        );
+
+        updatedFields.forEach((field, value) -> {
+            if (value != null && !value.equals("")) {
+                fieldUpdaters.get(field).accept(existingUser);
+            }
+        });
+
+        // Old List-based implementation
         // return existingUser;
 
-        // Repository-based implementation:
+        // Repository-based implementation
         return userRepository.save(existingUser);
     }
 
