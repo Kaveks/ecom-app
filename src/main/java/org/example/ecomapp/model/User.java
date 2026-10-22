@@ -30,7 +30,7 @@ public class User {
     private UserRole role=UserRole.CUSTOMER;
 
     @OneToOne(cascade = CascadeType.ALL,orphanRemoval = true)
-    @JoinColumn(name = "address_id",referencedColumnName = "id")
+    @JoinColumn(name = "address_id",unique = true)
     private Address address;
     @CreationTimestamp
     private LocalDateTime createdAt;

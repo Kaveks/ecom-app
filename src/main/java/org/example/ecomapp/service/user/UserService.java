@@ -1,8 +1,14 @@
 package org.example.ecomapp.service.user;
 
+import org.example.ecomapp.dto.address.AddressRequest;
+import org.example.ecomapp.dto.address.AddressResponse;
+import org.example.ecomapp.dto.user.UserRequest;
+import org.example.ecomapp.dto.user.UserResponse;
+import org.example.ecomapp.model.Address;
 import org.example.ecomapp.model.User;
 import org.example.ecomapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +27,63 @@ public class UserService implements UserServiceInterface {
         this.userRepository = userRepository;
     }
 
+
+    // Convert User entity to UserResponse DTO
+    private UserResponse toUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(String.valueOf(user.getId()));
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
+        response.setRole(user.getRole());
+        if (user.getAddress() != null) {
+            Address address = user.getAddress();
+            AddressResponse addressResponse = new AddressResponse();
+            addressResponse.setCity(address.getCity());
+            addressResponse.setStreet(address.getStreet());
+            addressResponse.setCounty(address.getCounty());
+            addressResponse.setPostalCode(address.getPostalCode());
+            addressResponse.setPostalAddress(address.getPostalAddress());
+
+            response.setAddress(addressResponse);
+        }
+        return response;
+    }
+    // Convert UserRequest DTO to User entity
+    private User toUserEntity(UserRequest request) {
+        User user = new User();
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+
+        // Role defaults to CUSTOMER in the User entity.
+        // Do not accept an elevated role from a public request.
+
+        if (request.getAddress() != null) {
+            user.setAddress(toAddressEntity(request.getAddress()));
+        }
+
+        return user;
+    }
+
+    // Convert AddressRequest DTO to Address entity
+    private Address toAddressEntity(AddressRequest request) {
+        Address address = new Address();
+
+        address.setCity(request.getCity());
+        address.setStreet(request.getStreet());
+        address.setCounty(request.getCounty());
+        address.setPostalCode(request.getPostalCode());
+        address.setPostalAddress(request.getPostalAddress());
+
+        return address;
+    }
+
     @Override
-    public User fetchUser(Long id) {
+    public UserResponse fetchUser(Long id) {
         // Old List-based implementation
         // return userList.stream()
         //         .filter(user -> user.getId().equals(id))
@@ -30,33 +91,41 @@ public class UserService implements UserServiceInterface {
         //         .orElse(null);
 
         // Repository-based implementation
-        return userRepository.findById(id).orElse(null);
+        return userRepository.findById(id)
+                .map(this::toUserResponse)
+                .orElse(null);
     }
 
     @Override
-    public List<User> fetchUsers() {
+    public List<UserResponse> fetchUsers() {
         // Old List-based implementation
         // return userList;
 
         // Repository-based implementation
-        return userRepository.findAll();
+        return userRepository.findAll()
+                .stream()
+                .map(this::toUserResponse)
+                .toList();
     }
 
     @Override
-    public String addUser(User user) {
+    public UserResponse addUser(UserRequest request) {
         // Old List-based implementation
         // user.setId(nextId++);
         // userList.add(user);
 
         // Repository-based implementation
-        userRepository.save(user);
+        User user= toUserEntity(request);
 
-        return "User added successfully";
+        User savedUser= userRepository.save(user);
+
+        //return "User added successfully";
+        return toUserResponse(savedUser) ;
     }
 
     @Override
-    public User updateUser(Long id, User updateUser) {
-        User existingUser = fetchUser(id);
+    public UserResponse updateUser(Long id, UserRequest updateUser) {
+        User existingUser = userRepository.findById(id).orElse(null);
 
         if (existingUser == null) {
             return null;
@@ -90,8 +159,8 @@ public class UserService implements UserServiceInterface {
                 "firstName", user -> user.setFirstName(updateUser.getFirstName()),
                 "lastName", user -> user.setLastName(updateUser.getLastName()),
                 "email", user -> user.setEmail(updateUser.getEmail()),
-                "phone", user -> user.setPhone(updateUser.getPhone()),
-                "role", user -> user.setRole(updateUser.getRole())
+                "phone", user -> user.setPhone(updateUser.getPhone())
+
         );
 
         Map<String, Object> updatedFields = Map.of(
@@ -102,9 +171,7 @@ public class UserService implements UserServiceInterface {
                 "email", updateUser.getEmail() != null
                         ? updateUser.getEmail() : "",
                 "phone", updateUser.getPhone() != null
-                        ? updateUser.getPhone() : "",
-                "role", updateUser.getRole() != null
-                        ? updateUser.getRole() : ""
+                        ? updateUser.getPhone() : ""
         );
 
         updatedFields.forEach((field, value) -> {
@@ -112,17 +179,59 @@ public class UserService implements UserServiceInterface {
                 fieldUpdaters.get(field).accept(existingUser);
             }
         });
+        // Update Address fields
+        AddressRequest updateAddress = updateUser.getAddress();
 
+        if (updateAddress != null) {
+
+            Address existingAddress = existingUser.getAddress();
+
+            // Create an address if the user does not have one
+            if (existingAddress == null) {
+                existingAddress = new Address();
+                existingUser.setAddress(existingAddress);
+            }
+
+            // Assign to an effectively final variable for use in lambdas
+            Address addressToUpdate = existingAddress;
+
+            // Map of address field updaters
+            Map<String, Consumer<Address>> addressFieldUpdaters = Map.of(
+                    "city", address -> address.setCity(updateAddress.getCity()),
+                    "street", address -> address.setStreet(updateAddress.getStreet()),
+                    "county", address -> address.setCounty(updateAddress.getCounty()),
+                    "postalCode", address -> address.setPostalCode(updateAddress.getPostalCode()),
+                    "postalAddress", address -> address.setPostalAddress(updateAddress.getPostalAddress())
+            );
+
+            // Map of address fields and their supplied values
+            Map<String, String> updatedAddressFields = Map.of(
+                    "city", updateAddress.getCity() != null ? updateAddress.getCity() : "",
+                    "street", updateAddress.getStreet() != null ? updateAddress.getStreet() : "",
+                    "county", updateAddress.getCounty() != null ? updateAddress.getCounty() : "",
+                    "postalCode", updateAddress.getPostalCode() != null ? updateAddress.getPostalCode() : "",
+                    "postalAddress", updateAddress.getPostalAddress() != null
+                            ? updateAddress.getPostalAddress() : ""
+            );
+
+            // Apply the updates
+            updatedAddressFields.forEach((field, value) -> {
+                if (!value.isBlank()) {
+                    addressFieldUpdaters.get(field).accept(addressToUpdate);
+                }
+            });
+        }
         // Old List-based implementation
         // return existingUser;
 
         // Repository-based implementation
-        return userRepository.save(existingUser);
+        User savedUser=userRepository.save(existingUser);
+        return toUserResponse(savedUser);
     }
 
     @Override
     public Boolean deleteUser(Long id) {
-        User user = fetchUser(id);
+        User user = userRepository.findById(id).orElse(null);
 
         if (user == null) {
             return false;

@@ -1,13 +1,19 @@
 package org.example.ecomapp.service.user;
 
-import org.example.ecomapp.model.User;
+import org.example.ecomapp.dto.user.UserRequest;
+import org.example.ecomapp.dto.user.UserResponse;
 
 import java.util.List;
 
 public interface UserServiceInterface {
-    List<User> fetchUsers();
-    String addUser(User user);
-    User fetchUser(Long id);
-    User updateUser(Long id ,User updateUser);
+
+    UserResponse fetchUser(Long id);
+
+    List<UserResponse> fetchUsers();
+
+    UserResponse addUser(UserRequest request);
+
+    UserResponse updateUser(Long id, UserRequest updateRequest);
+
     Boolean deleteUser(Long id);
 }
