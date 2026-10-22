@@ -2,11 +2,7 @@
 package org.example.ecomapp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.ecomapp.enums.UserRole;
@@ -28,6 +24,10 @@ public class User {
     private String email;
     private String phone;
     private UserRole role=UserRole.CUSTOMER;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id",referencedColumnName = "id")
+    private Address address;
 
 
     // Use Lombok to generate constructors instead.
