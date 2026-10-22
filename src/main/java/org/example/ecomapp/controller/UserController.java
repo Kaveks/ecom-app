@@ -1,4 +1,6 @@
-package org.example.ecomapp;
+package org.example.ecomapp.controller;
+import org.example.ecomapp.model.User;
+import org.example.ecomapp.service.user.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

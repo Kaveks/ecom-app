@@ -1,4 +1,4 @@
-package org.example.ecomapp;
+package org.example.ecomapp.enums;
 
 public enum UserRole {
     ADMIN,CUSTOMER

@@ -1,4 +1,6 @@
-package org.example.ecomapp;
+package org.example.ecomapp.service.user;
+
+import org.example.ecomapp.model.User;
 
 import java.util.List;
 

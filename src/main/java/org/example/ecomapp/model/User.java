@@ -1,5 +1,5 @@
 
-package org.example.ecomapp;
+package org.example.ecomapp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.ecomapp.enums.UserRole;
 
 @Data
 @NoArgsConstructor

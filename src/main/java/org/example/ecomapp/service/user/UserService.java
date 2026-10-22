@@ -1,5 +1,7 @@
-package org.example.ecomapp;
+package org.example.ecomapp.service.user;
 
+import org.example.ecomapp.model.User;
+import org.example.ecomapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
