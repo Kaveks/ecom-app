@@ -4,6 +4,7 @@ import org.example.ecomapp.dto.product.ProductRequest;
 import org.example.ecomapp.dto.product.ProductResponse;
 import org.example.ecomapp.model.Product;
 import org.example.ecomapp.repository.ProductRepository;
+import org.example.ecomapp.util.FieldUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,11 +35,8 @@ public class ProductService {
         response.setCategory(product.getCategory());
         response.setDescription(product.getDescription());
         response.setImageUrl(product.getImageUrl());
+        response.setActive(product.getActive());
         return response;
-
-    }
-    private Boolean hasText(String val){
-        return val !=null && !val.isBlank();
     }
     public ProductResponse fetchProduct(Long id){
         return productRepository.findById(id)
@@ -63,27 +61,27 @@ public class ProductService {
             return null;
         }
         // update product
-        if(hasText(request.getName())){
+        if(FieldUtils.hasText(request,ProductRequest::getName)){
             existingProduct.setName(request.getName());
         }
 
-        if(hasText(String.valueOf(request.getPrice()))){
+        if(FieldUtils.hasValue(request,ProductRequest::getPrice)){
             existingProduct.setPrice(request.getPrice());
         }
 
-        if(hasText(String.valueOf(request.getQuantity()))){
+        if(FieldUtils.hasValue(request,ProductRequest::getQuantity)){
             existingProduct.setQuantity(request.getQuantity());
         }
 
-        if(hasText(String.valueOf(request.getCategory()))){
+        if(FieldUtils.hasValue(request,ProductRequest::getCategory)){
             existingProduct.setCategory(request.getCategory());
         }
 
-        if(hasText(request.getDescription())){
+        if(FieldUtils.hasText(request,ProductRequest::getDescription)){
             existingProduct.setDescription(request.getDescription());
         }
 
-        if(hasText(request.getImageUrl())){
+        if(FieldUtils.hasText(request,ProductRequest::getImageUrl)){
             existingProduct.setImageUrl(request.getImageUrl());
         }
 
