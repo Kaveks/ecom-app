@@ -21,7 +21,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUser(
+    public ResponseEntity<UserResponse> fetchUser(
             @PathVariable Long id) {
 
         UserResponse user = userService.fetchUser(id);
@@ -34,12 +34,12 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getUsers() {
+    public ResponseEntity<List<UserResponse>> fetchUsers() {
         return ResponseEntity.ok(userService.fetchUsers());
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(
+    public ResponseEntity<UserResponse> addUser(
             @RequestBody UserRequest request) {
 
         UserResponse createdUser = userService.addUser(request);
