@@ -7,6 +7,7 @@ import org.example.ecomapp.dto.user.UserResponse;
 import org.example.ecomapp.model.Address;
 import org.example.ecomapp.model.User;
 import org.example.ecomapp.repository.UserRepository;
+import org.example.ecomapp.util.FieldUtils;
 import org.springframework.stereotype.Service;
 
 
@@ -130,7 +131,7 @@ public class UserService implements UserServiceInterface {
 
 
     @Override
-    public UserResponse updateUser(Long id, UserRequest updateUser) {
+    public UserResponse updateUser(Long id, UserRequest request) {
 
         // Find the existing user
         User existingUser = userRepository.findById(id).orElse(null);
@@ -141,25 +142,25 @@ public class UserService implements UserServiceInterface {
         }
 
         // Update User fields
-        if (hasText(updateUser.getFirstName())) {
-            existingUser.setFirstName(updateUser.getFirstName());
+        if (FieldUtils.hasText(request,UserRequest::getFirstName)) {
+            existingUser.setFirstName(request.getFirstName());
         }
 
-        if (hasText(updateUser.getLastName())) {
-            existingUser.setLastName(updateUser.getLastName());
+        if (FieldUtils.hasText(request,UserRequest::getLastName)) {
+            existingUser.setLastName(request.getLastName());
         }
 
-        if (hasText(updateUser.getEmail())) {
-            existingUser.setEmail(updateUser.getEmail());
+        if (FieldUtils.hasText(request,UserRequest::getEmail)) {
+            existingUser.setEmail(request.getEmail());
         }
 
-        if (hasText(updateUser.getPhone())) {
-            existingUser.setPhone(updateUser.getPhone());
+        if (FieldUtils.hasText(request,UserRequest::getPhone)) {
+            existingUser.setPhone(request.getPhone());
         }
 
 
         // Update Address fields
-        AddressRequest updateAddress = updateUser.getAddress();
+        AddressRequest updateAddress = request.getAddress();
 
         if (updateAddress != null) {
 
@@ -173,25 +174,27 @@ public class UserService implements UserServiceInterface {
             }
 
             // Update the address fields supplied in the request
-            if (hasText(updateAddress.getCity())) {
+
+            if (FieldUtils.hasText(updateAddress, AddressRequest::getCity)) {
                 existingAddress.setCity(updateAddress.getCity());
             }
 
-            if (hasText(updateAddress.getStreet())) {
+            if (FieldUtils.hasText(updateAddress, AddressRequest::getStreet)) {
                 existingAddress.setStreet(updateAddress.getStreet());
             }
 
-            if (hasText(updateAddress.getCounty())) {
+            if (FieldUtils.hasText(updateAddress, AddressRequest::getCounty)) {
                 existingAddress.setCounty(updateAddress.getCounty());
             }
 
-            if (hasText(updateAddress.getPostalCode())) {
+            if (FieldUtils.hasText(updateAddress, AddressRequest::getPostalCode)) {
                 existingAddress.setPostalCode(updateAddress.getPostalCode());
             }
 
-            if (hasText(updateAddress.getPostalAddress())) {
+            if (FieldUtils.hasText(updateAddress, AddressRequest::getPostalAddress)) {
                 existingAddress.setPostalAddress(updateAddress.getPostalAddress());
             }
+
         }
 
         // Save the updated user and associated address
