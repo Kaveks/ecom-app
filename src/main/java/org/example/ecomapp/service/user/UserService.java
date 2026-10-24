@@ -82,6 +82,11 @@ public class UserService implements UserServiceInterface {
         return address;
     }
 
+    // check for text
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
     @Override
     public UserResponse fetchUser(Long id) {
         // Old List-based implementation
@@ -123,67 +128,42 @@ public class UserService implements UserServiceInterface {
         return toUserResponse(savedUser) ;
     }
 
+
     @Override
     public UserResponse updateUser(Long id, UserRequest updateUser) {
+
+        // Find the existing user
         User existingUser = userRepository.findById(id).orElse(null);
 
+        // Return null if the user does not exist
         if (existingUser == null) {
             return null;
         }
 
-        // Old implementation using if conditions
-        /*
-        if (updateUser.getFirstName() != null) {
+        // Update User fields
+        if (hasText(updateUser.getFirstName())) {
             existingUser.setFirstName(updateUser.getFirstName());
         }
 
-        if (updateUser.getLastName() != null) {
+        if (hasText(updateUser.getLastName())) {
             existingUser.setLastName(updateUser.getLastName());
         }
 
-        if (updateUser.getEmail() != null) {
+        if (hasText(updateUser.getEmail())) {
             existingUser.setEmail(updateUser.getEmail());
         }
 
-        if (updateUser.getPhone() != null) {
+        if (hasText(updateUser.getPhone())) {
             existingUser.setPhone(updateUser.getPhone());
         }
 
-        if (updateUser.getRole() != null) {
-            existingUser.setRole(updateUser.getRole());
-        }
-        */
 
-        // Current implementation using a Map
-        Map<String, Consumer<User>> fieldUpdaters = Map.of(
-                "firstName", user -> user.setFirstName(updateUser.getFirstName()),
-                "lastName", user -> user.setLastName(updateUser.getLastName()),
-                "email", user -> user.setEmail(updateUser.getEmail()),
-                "phone", user -> user.setPhone(updateUser.getPhone())
-
-        );
-
-        Map<String, Object> updatedFields = Map.of(
-                "firstName", updateUser.getFirstName() != null
-                        ? updateUser.getFirstName() : "",
-                "lastName", updateUser.getLastName() != null
-                        ? updateUser.getLastName() : "",
-                "email", updateUser.getEmail() != null
-                        ? updateUser.getEmail() : "",
-                "phone", updateUser.getPhone() != null
-                        ? updateUser.getPhone() : ""
-        );
-
-        updatedFields.forEach((field, value) -> {
-            if (value != null && !value.equals("")) {
-                fieldUpdaters.get(field).accept(existingUser);
-            }
-        });
         // Update Address fields
         AddressRequest updateAddress = updateUser.getAddress();
 
         if (updateAddress != null) {
 
+            // Get the user's existing address
             Address existingAddress = existingUser.getAddress();
 
             // Create an address if the user does not have one
@@ -192,42 +172,35 @@ public class UserService implements UserServiceInterface {
                 existingUser.setAddress(existingAddress);
             }
 
-            // Assign to an effectively final variable for use in lambdas
-            Address addressToUpdate = existingAddress;
+            // Update the address fields supplied in the request
+            if (hasText(updateAddress.getCity())) {
+                existingAddress.setCity(updateAddress.getCity());
+            }
 
-            // Map of address field updaters
-            Map<String, Consumer<Address>> addressFieldUpdaters = Map.of(
-                    "city", address -> address.setCity(updateAddress.getCity()),
-                    "street", address -> address.setStreet(updateAddress.getStreet()),
-                    "county", address -> address.setCounty(updateAddress.getCounty()),
-                    "postalCode", address -> address.setPostalCode(updateAddress.getPostalCode()),
-                    "postalAddress", address -> address.setPostalAddress(updateAddress.getPostalAddress())
-            );
+            if (hasText(updateAddress.getStreet())) {
+                existingAddress.setStreet(updateAddress.getStreet());
+            }
 
-            // Map of address fields and their supplied values
-            Map<String, String> updatedAddressFields = Map.of(
-                    "city", updateAddress.getCity() != null ? updateAddress.getCity() : "",
-                    "street", updateAddress.getStreet() != null ? updateAddress.getStreet() : "",
-                    "county", updateAddress.getCounty() != null ? updateAddress.getCounty() : "",
-                    "postalCode", updateAddress.getPostalCode() != null ? updateAddress.getPostalCode() : "",
-                    "postalAddress", updateAddress.getPostalAddress() != null
-                            ? updateAddress.getPostalAddress() : ""
-            );
+            if (hasText(updateAddress.getCounty())) {
+                existingAddress.setCounty(updateAddress.getCounty());
+            }
 
-            // Apply the updates
-            updatedAddressFields.forEach((field, value) -> {
-                if (!value.isBlank()) {
-                    addressFieldUpdaters.get(field).accept(addressToUpdate);
-                }
-            });
+            if (hasText(updateAddress.getPostalCode())) {
+                existingAddress.setPostalCode(updateAddress.getPostalCode());
+            }
+
+            if (hasText(updateAddress.getPostalAddress())) {
+                existingAddress.setPostalAddress(updateAddress.getPostalAddress());
+            }
         }
-        // Old List-based implementation
-        // return existingUser;
 
-        // Repository-based implementation
-        User savedUser=userRepository.save(existingUser);
+        // Save the updated user and associated address
+        User savedUser = userRepository.save(existingUser);
+
+        // Convert the saved user entity into a response DTO
         return toUserResponse(savedUser);
     }
+
 
     @Override
     public Boolean deleteUser(Long id) {
