@@ -2,6 +2,7 @@ package org.example.ecomapp.service.product;
 
 import org.example.ecomapp.dto.product.ProductRequest;
 import org.example.ecomapp.dto.product.ProductResponse;
+import org.example.ecomapp.exception.CustomException;
 import org.example.ecomapp.model.Product;
 import org.example.ecomapp.repository.ProductRepository;
 import org.example.ecomapp.util.FieldUtils;
@@ -38,17 +39,42 @@ public class ProductService {
         response.setActive(product.getActive());
         return response;
     }
-    public ProductResponse fetchProduct(Long id){
-        return productRepository.findById(id)
-                .map(this::toProductResponse)
-                .orElse(null);
+//    public ProductResponse fetchProduct(Long id){
+//        return productRepository.findByIdAndActiveTrue(id)
+//                .map(this::toProductResponse)
+//                .orElse(null);
+//    }
+
+    public ProductResponse fetchProduct(Long id) {
+        Product product = productRepository.findById(id).orElse(null);
+
+        if (product == null) {
+            throw new CustomException(
+                    "Product with ID " + id + " was not found."
+            );
+        }
+
+        if (!Boolean.TRUE.equals(product.getActive())) {
+            throw new CustomException(
+                    "Product '" + product.getName()
+                            + "' is currently unavailable."
+            );
+        }
+
+        if (product.getQuantity() == null || product.getQuantity() <= 0) {
+            throw new CustomException(
+                     product.getName() + " , is out of stock."
+            );
+        }
+
+        return toProductResponse(product);
     }
+
     public List<ProductResponse> fetchProducts(){
-        return productRepository.findAll()
+        return productRepository.findByActiveTrue()
                 .stream()
                 .map(this::toProductResponse)
                 .toList();
-
     }
     public ProductResponse addProduct(ProductRequest request){
         Product product =toProductEntity(request);
@@ -98,4 +124,10 @@ public class ProductService {
         return true;
     }
 
+    public List<ProductResponse> searchProducts(String keyword) {
+        return productRepository.searchProducts(keyword)
+                .stream()
+                .map(this::toProductResponse)
+                .toList();
+    }
 }
