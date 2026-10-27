@@ -9,6 +9,7 @@ import org.example.ecomapp.model.User;
 import org.example.ecomapp.repository.CartItemRepository;
 import org.example.ecomapp.repository.ProductRepository;
 import org.example.ecomapp.repository.UserRepository;
+import org.example.ecomapp.service.product.ProductValidationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,47 +24,7 @@ public class CartItemService {
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
-
-
-    private void validateProductAvailability(Product product){
-        if(!Boolean.TRUE.equals(product.getActive())){
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    product.getName() + " is currently unavailable."
-            );
-        }
-
-        if(product.getQuantity() ==null|| product.getQuantity()<=0){
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    product.getName() + " is out of stock."
-            );
-        }
-        if(product.getPrice()==null || product.getPrice().signum()<0){
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    product.getName() + " has invalid price."
-            );
-        }
-
-    }
-    private void validateStock(Product product, int requestedQuantity){
-        if(requestedQuantity> product.getQuantity()){
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Only " + product.getQuantity() + " units of " + product.getName() + " are currently available"
-            );
-        }
-    }
-
-//    private void validateQuantity(Integer quantity) {
-//        if (quantity == null || quantity <= 0) {
-//            throw new ResponseStatusException(
-//                    HttpStatus.BAD_REQUEST,
-//                    quantity + " is not a valid  quantity."
-//            );
-//        }
-//    }
+    private final ProductValidationService productValidationService;
 
     private CartItemResponse toCartResponse(CartItem cartItem){
         CartItemResponse response = new CartItemResponse();
@@ -100,7 +61,7 @@ public class CartItemService {
                         + " was not found."
         ));
 
-        validateProductAvailability(product);
+        productValidationService.validateProductAvailability(product);
 
         CartItem cartItem = cartItemRepository
                 .findByUser_IdAndProduct_Id(userId, product.getId())
@@ -114,7 +75,7 @@ public class CartItemService {
             cartItem.setUser(user);
             cartItem.setProduct(product);
         }
-        validateStock(product, newQuantity);
+        productValidationService.validateStock(product, newQuantity);
         cartItem.setQuantity(newQuantity);
         cartItem.setAmount(
                 product.getPrice().multiply(
@@ -150,8 +111,8 @@ public class CartItemService {
                         )
                 );
         Product product = cartItem.getProduct();
-        validateProductAvailability(product);
-        validateStock(product,request.getQuantity());
+        productValidationService.validateProductAvailability(product);
+        productValidationService.validateStock(product,request.getQuantity());
         cartItem.setQuantity(request.getQuantity());
         cartItem.setAmount(
                 product.getPrice().multiply(
