@@ -46,10 +46,10 @@ public class RoleAuthorizationInterceptor implements HandlerInterceptor {
             );
         }
 
-        Long userId;
+        long userId;
 
         try {
-            userId = Long.valueOf(userIdHeader);
+            userId = Long.parseLong(userIdHeader);
         } catch (NumberFormatException exception) {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,

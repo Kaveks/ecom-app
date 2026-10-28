@@ -22,11 +22,16 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(nullable = false)
     private String firstName;
+    @Column(nullable = false)
     private String lastName;
+    @Column(nullable = false)
     private String email;
+    @Column(nullable = false)
     private String phone;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UserRole role=UserRole.CUSTOMER;
 
     @OneToOne(cascade = CascadeType.ALL,orphanRemoval = true)

@@ -1,5 +1,6 @@
 package org.example.ecomapp.controller;
 
+import jakarta.validation.Valid;
 import org.example.ecomapp.dto.product.InventoryResponse;
 import org.example.ecomapp.dto.product.InventoryStockRequest;
 import org.example.ecomapp.dto.product.ProductRequest;
@@ -95,18 +96,18 @@ public class ProductController {
         return ResponseEntity.notFound().build();
     }
     @GetMapping("/{id}/inventory")
-    @RequireRoles({UserRole.ADMIN})
+    @RequireRoles({UserRole.ADMIN,UserRole.MERCHANT})
     public ResponseEntity<InventoryResponse> fetchInventory(
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(productService.fetchInventory(id));
     }
 
-    @PostMapping("/{id}/inventory/receive")
-    @RequireRoles({UserRole.ADMIN})
+    @PostMapping("/{id}/inventory")
+    @RequireRoles({UserRole.ADMIN,UserRole.MERCHANT})
     public ResponseEntity<InventoryResponse> receiveStock(
             @PathVariable Long id,
-            @RequestBody InventoryStockRequest request
+            @Valid @RequestBody InventoryStockRequest request
     ) {
         return ResponseEntity.ok(
                 productService.receiveStock(id, request)
@@ -117,7 +118,7 @@ public class ProductController {
     @RequireRoles({UserRole.ADMIN})
     public ResponseEntity<InventoryResponse> adjustStock(
             @PathVariable Long id,
-            @RequestBody InventoryStockRequest request
+            @Valid @RequestBody InventoryStockRequest request
     ) {
         return ResponseEntity.ok(
                 productService.adjustStock(id, request)
