@@ -37,17 +37,4 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
-    // Use Lombok to generate constructors instead.
-
-    // Old constructor implementation, kept for reference:
-    //
-    // public User() {
-    // }
-    //
-    // public User(Long id, String firstName, String lastName) {
-    //     this.id = id;
-    //     this.firstName = firstName;
-    //     this.lastName = lastName;
-    // }
 }
