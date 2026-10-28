@@ -1,0 +1,17 @@
+
+package org.example.ecomapp.repository;
+
+import org.example.ecomapp.model.InventoryMovement;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface InventoryMovementRepository
+        extends JpaRepository<InventoryMovement, Long> {
+
+    List<InventoryMovement> findByInventory_IdOrderByCreatedAtDesc(
+            Long inventoryId
+    );
+}

@@ -7,10 +7,11 @@ import java.math.BigDecimal;
 
 @Data
 public class ProductResponse {
+
     private String id;
     private String name;
     private BigDecimal price;
-    private Integer quantity;
+    private Integer availableStock;
     private ProductCategory category;
     private String description;
     private String imageUrl;
