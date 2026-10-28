@@ -1,6 +1,7 @@
 
 package org.example.ecomapp.service.product;
 
+import org.example.ecomapp.model.Inventory;
 import org.example.ecomapp.model.Product;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductValidationService {
 
     public void validateProductAvailability(Product product) {
-
         if (!Boolean.TRUE.equals(product.getActive())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -18,14 +18,8 @@ public class ProductValidationService {
             );
         }
 
-        if (product.getQuantity() == null || product.getQuantity() <= 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    product.getName() + " is out of stock."
-            );
-        }
-
-        if (product.getPrice() == null || product.getPrice().signum() < 0) {
+        if (product.getPrice() == null
+                || product.getPrice().signum() < 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     product.getName() + " has an invalid price."
@@ -33,20 +27,21 @@ public class ProductValidationService {
         }
     }
 
-    public void validateStock(Product product, int requestedQuantity) {
+    public void validateStock(Inventory inventory, int requestedQuantity) {
+        validateQuantity(requestedQuantity);
 
-        if (requestedQuantity > product.getQuantity()) {
+        if (inventory.getAvailableStock() < requestedQuantity) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only " + product.getQuantity()
-                            + " units of " + product.getName()
+                    "Only " + inventory.getAvailableStock()
+                            + " units of "
+                            + inventory.getProduct().getName()
                             + " are currently available."
             );
         }
     }
 
     public void validateQuantity(Integer quantity) {
-
         if (quantity == null || quantity <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,

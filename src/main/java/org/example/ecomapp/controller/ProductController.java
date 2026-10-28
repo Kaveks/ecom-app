@@ -1,8 +1,12 @@
 package org.example.ecomapp.controller;
 
+import org.example.ecomapp.dto.product.InventoryResponse;
+import org.example.ecomapp.dto.product.InventoryStockRequest;
 import org.example.ecomapp.dto.product.ProductRequest;
 import org.example.ecomapp.dto.product.ProductResponse;
+import org.example.ecomapp.enums.UserRole;
 import org.example.ecomapp.exception.CustomException;
+import org.example.ecomapp.security.RequireRoles;
 import org.example.ecomapp.service.product.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,5 +93,34 @@ public class ProductController {
         }
 
         return ResponseEntity.notFound().build();
+    }
+    @GetMapping("/{id}/inventory")
+    @RequireRoles({UserRole.ADMIN})
+    public ResponseEntity<InventoryResponse> fetchInventory(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(productService.fetchInventory(id));
+    }
+
+    @PostMapping("/{id}/inventory/receive")
+    @RequireRoles({UserRole.ADMIN})
+    public ResponseEntity<InventoryResponse> receiveStock(
+            @PathVariable Long id,
+            @RequestBody InventoryStockRequest request
+    ) {
+        return ResponseEntity.ok(
+                productService.receiveStock(id, request)
+        );
+    }
+
+    @PostMapping("/{id}/inventory/adjust")
+    @RequireRoles({UserRole.ADMIN})
+    public ResponseEntity<InventoryResponse> adjustStock(
+            @PathVariable Long id,
+            @RequestBody InventoryStockRequest request
+    ) {
+        return ResponseEntity.ok(
+                productService.adjustStock(id, request)
+        );
     }
 }

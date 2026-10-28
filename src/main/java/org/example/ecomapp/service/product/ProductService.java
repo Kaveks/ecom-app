@@ -1,12 +1,16 @@
 package org.example.ecomapp.service.product;
 
+import org.example.ecomapp.dto.product.InventoryResponse;
+import org.example.ecomapp.dto.product.InventoryStockRequest;
 import org.example.ecomapp.dto.product.ProductRequest;
 import org.example.ecomapp.dto.product.ProductResponse;
+import org.example.ecomapp.enums.InventoryMovementType;
 import org.example.ecomapp.exception.CustomException;
 import org.example.ecomapp.model.Inventory;
 import org.example.ecomapp.model.Product;
 import org.example.ecomapp.repository.InventoryRepository;
 import org.example.ecomapp.repository.ProductRepository;
+import org.example.ecomapp.service.inventory.InventoryService;
 import org.example.ecomapp.util.FieldUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,48 +22,19 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
+    private final InventoryService inventoryService;
 
     public ProductService(
             ProductRepository productRepository,
-            InventoryRepository inventoryRepository
+            InventoryRepository inventoryRepository,
+            InventoryService inventoryService
     ) {
         this.productRepository = productRepository;
         this.inventoryRepository = inventoryRepository;
+        this.inventoryService=inventoryService;
     }
 
-    private Product toProductEntity(ProductRequest request) {
-        Product product = new Product();
-
-        product.setName(request.getName());
-        product.setPrice(request.getPrice());
-        product.setCategory(request.getCategory());
-        product.setDescription(request.getDescription());
-        product.setImageUrl(request.getImageUrl());
-
-        return product;
-    }
-
-    private ProductResponse toProductResponse(Product product) {
-        ProductResponse response = new ProductResponse();
-
-        response.setId(String.valueOf(product.getId()));
-        response.setName(product.getName());
-        response.setPrice(product.getPrice());
-        response.setCategory(product.getCategory());
-        response.setDescription(product.getDescription());
-        response.setImageUrl(product.getImageUrl());
-        response.setActive(product.getActive());
-
-        int availableStock = inventoryRepository
-                .findByProduct_Id(product.getId())
-                .map(Inventory::getAvailableStock)
-                .orElse(0);
-
-        response.setAvailableStock(availableStock);
-
-        return response;
-    }
-
+    // product
     @Transactional(readOnly = true)
     public ProductResponse fetchProduct(Long id) {
         Product product = productRepository.findById(id)
@@ -157,5 +132,90 @@ public class ProductService {
                 .stream()
                 .map(this::toProductResponse)
                 .toList();
+    }
+    //inventory
+    @Transactional(readOnly = true)
+    public InventoryResponse fetchInventory(Long productId) {
+        return toInventoryResponse(inventoryService.fetchInventory(productId));
+    }
+
+    @Transactional
+    public InventoryResponse receiveStock(
+            Long productId,
+            InventoryStockRequest request
+    ) {
+
+        inventoryService.processStock(
+                productId,
+                request.getQuantity(),
+                InventoryMovementType.STOCK_RECEIVED,
+                request.getReason()
+        );
+
+        return toInventoryResponse(inventoryService.fetchInventory(productId));
+    }
+
+    @Transactional
+    public InventoryResponse adjustStock(
+            Long productId,
+            InventoryStockRequest request
+    ) {
+
+        inventoryService.processStock(
+                productId,
+                request.getQuantity(),
+                InventoryMovementType.STOCK_ADJUSTED,
+                request.getReason()
+        );
+
+        return toInventoryResponse(inventoryService.fetchInventory(productId));
+    }
+
+
+    private InventoryResponse toInventoryResponse(Inventory inventory) {
+        InventoryResponse response = new InventoryResponse();
+
+        response.setProductId(
+                String.valueOf(inventory.getProduct().getId())
+        );
+        response.setProductName(inventory.getProduct().getName());
+        response.setQuantityOnHand(inventory.getQuantityOnHand());
+        response.setQuantityReserved(inventory.getQuantityReserved());
+        response.setAvailableStock(inventory.getAvailableStock());
+
+        return response;
+    }
+
+    private Product toProductEntity(ProductRequest request) {
+        Product product = new Product();
+
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setCategory(request.getCategory());
+        product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
+
+        return product;
+    }
+
+    private ProductResponse toProductResponse(Product product) {
+        ProductResponse response = new ProductResponse();
+
+        response.setId(String.valueOf(product.getId()));
+        response.setName(product.getName());
+        response.setPrice(product.getPrice());
+        response.setCategory(product.getCategory());
+        response.setDescription(product.getDescription());
+        response.setImageUrl(product.getImageUrl());
+        response.setActive(product.getActive());
+
+        int availableStock = inventoryRepository
+                .findByProduct_Id(product.getId())
+                .map(Inventory::getAvailableStock)
+                .orElse(0);
+
+        response.setAvailableStock(availableStock);
+
+        return response;
     }
 }
