@@ -1,9 +1,6 @@
 package org.example.ecomapp.service.product;
 
-import org.example.ecomapp.dto.product.InventoryResponse;
-import org.example.ecomapp.dto.product.InventoryStockRequest;
-import org.example.ecomapp.dto.product.ProductRequest;
-import org.example.ecomapp.dto.product.ProductResponse;
+import org.example.ecomapp.dto.product.*;
 import org.example.ecomapp.enums.InventoryMovementType;
 import org.example.ecomapp.exception.CustomException;
 import org.example.ecomapp.model.Inventory;
@@ -12,8 +9,10 @@ import org.example.ecomapp.repository.InventoryRepository;
 import org.example.ecomapp.repository.ProductRepository;
 import org.example.ecomapp.service.inventory.InventoryService;
 import org.example.ecomapp.util.FieldUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -156,19 +155,23 @@ public class ProductService {
     }
 
     @Transactional
-    public InventoryResponse adjustStock(
+    public void adjustStock(
             Long productId,
-            InventoryStockRequest request
+            InventoryAdjustmentRequest request
     ) {
+        if (productId == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Product ID is required."
+            );
+        }
 
         inventoryService.processStock(
                 productId,
-                request.getQuantity(),
+                request.getCountedQuantity(),
                 InventoryMovementType.STOCK_ADJUSTED,
                 request.getReason()
         );
-
-        return toInventoryResponse(inventoryService.fetchInventory(productId));
     }
 
 
