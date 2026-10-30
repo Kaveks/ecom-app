@@ -1,10 +1,7 @@
 package org.example.ecomapp.controller;
 
 import jakarta.validation.Valid;
-import org.example.ecomapp.dto.product.InventoryResponse;
-import org.example.ecomapp.dto.product.InventoryStockRequest;
-import org.example.ecomapp.dto.product.ProductRequest;
-import org.example.ecomapp.dto.product.ProductResponse;
+import org.example.ecomapp.dto.product.*;
 import org.example.ecomapp.enums.UserRole;
 import org.example.ecomapp.exception.CustomException;
 import org.example.ecomapp.security.RequireRoles;
@@ -113,15 +110,13 @@ public class ProductController {
                 productService.receiveStock(id, request)
         );
     }
-
-    @PostMapping("/{id}/inventory/adjust")
-    @RequireRoles({UserRole.ADMIN})
+    @PutMapping("/{id}/inventory/adjust")
+    @RequireRoles({UserRole.ADMIN, UserRole.MERCHANT})
     public ResponseEntity<InventoryResponse> adjustStock(
             @PathVariable Long id,
-            @Valid @RequestBody InventoryStockRequest request
+            @Valid @RequestBody InventoryAdjustmentRequest request
     ) {
-        return ResponseEntity.ok(
-                productService.adjustStock(id, request)
-        );
+        productService.adjustStock(id, request);
+        return ResponseEntity.ok(productService.fetchInventory(id));
     }
 }

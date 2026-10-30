@@ -1,10 +1,11 @@
 
 package org.example.ecomapp.service.order;
-
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.example.ecomapp.dto.order.OrderItemResponse;
 import org.example.ecomapp.dto.order.OrderResponse;
 import org.example.ecomapp.enums.InventoryMovementType;
+import org.example.ecomapp.enums.OrderStatus;
 import org.example.ecomapp.model.*;
 import org.example.ecomapp.repository.CartItemRepository;
 import org.example.ecomapp.repository.InventoryRepository;
@@ -14,20 +15,26 @@ import org.example.ecomapp.repository.UserRepository;
 import org.example.ecomapp.service.inventory.InventoryService;
 import org.example.ecomapp.service.product.ProductValidationService;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
@@ -159,6 +166,145 @@ public class OrderService {
         // Clear the cart only after order creation and reservation.
         cartItemRepository.deleteByUser_Id(userId);
         return toOrderResponse(savedOrder);
+    }
+
+    //retrieve order
+    @Transactional(readOnly = true)
+    public OrderResponse fetchOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Order with ID " + orderId + " was not found."
+                ));
+        return toOrderResponse(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> fetchUserOrders(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "User with ID " + userId + " was not found."
+            );
+        }
+
+        return orderRepository.findByUser_Id(userId)
+                .stream()
+                .map(this::toOrderResponse)
+                .toList();
+    }
+    //cancel order@Transactional
+    @Transactional
+    public void cancelOrder(Long orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Order with ID " + orderId + " was not found."
+                ));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Order is already cancelled."
+            );
+        }
+
+        if (order.getStatus() == OrderStatus.PAID ||
+                order.getStatus() == OrderStatus.PROCESSING ||
+                order.getStatus() == OrderStatus.SHIPPED ||
+                order.getStatus() == OrderStatus.DELIVERED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot cancel an order that has already been paid or fulfilled."
+            );
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        // Release reserved stock back to inventory
+        for (OrderItem item : order.getItems()) {
+            inventoryService.processStock(
+                    item.getProduct().getId(),
+                    item.getQuantity(),
+                    InventoryMovementType.STOCK_RELEASED,
+                    reason
+            );
+        }
+    }
+    @Value("${app.order.reservation-expiry-minutes:15}")
+    private long reservationExpiryMinutes;
+
+//    @Scheduled(fixedRate = 60000) // Runs every 60 seconds in the background
+//    @Transactional
+//    public void expireOldPendingOrders() {
+//        LocalDateTime expiryThreshold = LocalDateTime.now().minusMinutes(reservationExpiryMinutes);
+//
+//        List<Order> expiredOrders = orderRepository.findByStatusAndCreatedAtBefore(
+//                OrderStatus.PENDING,
+//                expiryThreshold
+//        );
+//
+//        if (!expiredOrders.isEmpty()) {
+//            log.info("Found {} expired PENDING order(s) to automatically cancel.", expiredOrders.size());
+//        }
+//
+//        for (Order order : expiredOrders) {
+//            try {
+//                // Re-verify status under transaction to prevent race conditions
+//                // with a simultaneous payment callback
+//                if (order.getStatus() == OrderStatus.PENDING) {
+//                    log.info("Automatically cancelling expired order ID: {} created at: {}", order.getId(), order.getCreatedAt());
+//                    cancelOrder(order.getId(), "Released for expired reservation order ID " + order.getId());
+//                }
+//            } catch (Exception e) {
+//                log.error("Failed to automatically expire order ID: {}", order.getId(), e);
+//            }
+//        }
+//    }
+@Transactional
+public OrderResponse updateOrderStatus(Long orderId, OrderStatus newStatus) {
+    Order order = findOrderById(orderId);
+    OrderStatus currentStatus = order.getStatus();
+
+    validateTransition(currentStatus, newStatus);
+
+    order.setStatus(newStatus);
+    Order updatedOrder = orderRepository.save(order);
+
+    log.info("Order ID: {} transitioned from {} to {}", orderId, currentStatus, newStatus);
+    return toOrderResponse(updatedOrder);
+}
+
+    private Order findOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Order with ID " + orderId + " was not found."
+                ));
+    }
+
+    private void validateTransition(OrderStatus currentStatus, OrderStatus newStatus) {
+        if (currentStatus == OrderStatus.CANCELLED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot update status of a cancelled order."
+            );
+        }
+
+        boolean isValidTransition = switch (currentStatus) {
+            case PAID -> newStatus == OrderStatus.PROCESSING;
+            case PROCESSING -> newStatus == OrderStatus.SHIPPED;
+            case SHIPPED -> newStatus == OrderStatus.DELIVERED;
+            default -> false;
+        };
+
+        if (!isValidTransition) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Invalid state transition from " + currentStatus + " to " + newStatus
+            );
+        }
     }
 
     private OrderResponse toOrderResponse(Order order) {

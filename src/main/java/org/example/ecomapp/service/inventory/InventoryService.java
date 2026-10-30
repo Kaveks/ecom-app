@@ -79,6 +79,8 @@ public class InventoryService {
             );
         }
 
+        int movementQuantity = quantity;
+
         try {
             switch (type) {
                 case STOCK_RECEIVED, STOCK_RETURNED -> {
@@ -121,7 +123,17 @@ public class InventoryService {
                 }
 
                 case STOCK_ADJUSTED -> {
-                    int adjustedOnHand = Math.addExact(onHand, quantity);
+                    int countedQuantity = quantity;
+                    int adjustment = countedQuantity - onHand;
+
+                    if (adjustment == 0) {
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Counted quantity matches recorded stock. No adjustment is needed."
+                        );
+                    }
+
+                    int adjustedOnHand = Math.addExact(onHand, adjustment);
 
                     if (adjustedOnHand < 0) {
                         throw new ResponseStatusException(
@@ -133,11 +145,12 @@ public class InventoryService {
                     if (adjustedOnHand < reserved) {
                         throw new ResponseStatusException(
                                 HttpStatus.CONFLICT,
-                                "Stock cannot be reduced below reserved quantity."
+                                "Stock cannot be reduced below reserved units " + reserved+ "."
                         );
                     }
 
                     inventory.setQuantityOnHand(adjustedOnHand);
+                    movementQuantity = adjustment; // record the signed delta in movement audit log
                 }
             }
         } catch (ArithmeticException exception) {
@@ -148,24 +161,32 @@ public class InventoryService {
         }
 
         inventoryRepository.save(inventory);
-        recordInventoryMovement(inventory, type, quantity, reason);
+        recordInventoryMovement(inventory, type, movementQuantity, reason);
     }
 
     private void validateMovementQuantity(
             Integer quantity,
             InventoryMovementType type
     ) {
+        if (quantity == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Quantity is required."
+            );
+        }
+
         if (type == InventoryMovementType.STOCK_ADJUSTED) {
-            if (quantity == null || quantity == 0) {
+            if (quantity < 0) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Stock adjustment must be a non-zero quantity."
+                        "Counted quantity cannot be negative."
                 );
             }
         } else {
             productValidationService.validateQuantity(quantity);
         }
     }
+
 
     private void recordInventoryMovement(
             Inventory inventory,
