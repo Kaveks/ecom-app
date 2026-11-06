@@ -235,7 +235,7 @@ public class OrderService {
     @Value("${app.order.reservation-expiry-minutes:15}")
     private long reservationExpiryMinutes;
 
-//    @Scheduled(fixedRate = 60000) // Runs every 60 seconds in the background
+    //    @Scheduled(fixedRate = 60000) // Runs every 60 seconds in the background
 //    @Transactional
 //    public void expireOldPendingOrders() {
 //        LocalDateTime expiryThreshold = LocalDateTime.now().minusMinutes(reservationExpiryMinutes);
@@ -262,19 +262,19 @@ public class OrderService {
 //            }
 //        }
 //    }
-@Transactional
-public OrderResponse updateOrderStatus(Long orderId, OrderStatus newStatus) {
-    Order order = findOrderById(orderId);
-    OrderStatus currentStatus = order.getStatus();
+    @Transactional
+    public OrderResponse updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        Order order = findOrderById(orderId);
+        OrderStatus currentStatus = order.getStatus();
 
-    validateTransition(currentStatus, newStatus);
+        validateTransition(currentStatus, newStatus);
 
-    order.setStatus(newStatus);
-    Order updatedOrder = orderRepository.save(order);
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
 
-    log.info("Order ID: {} transitioned from {} to {}", orderId, currentStatus, newStatus);
-    return toOrderResponse(updatedOrder);
-}
+        log.info("Order ID: {} transitioned from {} to {}", orderId, currentStatus, newStatus);
+        return toOrderResponse(updatedOrder);
+    }
 
     private Order findOrderById(Long orderId) {
         return orderRepository.findById(orderId)

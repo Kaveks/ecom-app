@@ -31,23 +31,6 @@ public class CartItemService {
     private final InventoryRepository inventoryRepository;
     private final ProductValidationService productValidationService;
 
-    private CartItemResponse toCartResponse(CartItem cartItem) {
-        CartItemResponse response = new CartItemResponse();
-        Product product = cartItem.getProduct();
-
-        response.setId(String.valueOf(cartItem.getId()));
-        response.setProductId(String.valueOf(product.getId()));
-        response.setProductName(product.getName());
-        response.setUnitPrice(product.getPrice());
-        response.setQuantity(cartItem.getQuantity());
-        response.setAmount(cartItem.getAmount());
-        response.setImageUrl(product.getImageUrl());
-        response.setCreatedAt(cartItem.getCreatedAt());
-        response.setUpdatedAt(cartItem.getUpdatedAt());
-
-        return response;
-    }
-
     @Transactional
     public CartItemResponse addToCart(
             Long userId,
@@ -60,7 +43,6 @@ public class CartItemService {
                         HttpStatus.NOT_FOUND,
                         "User with ID " + userId + " was not found."
                 ));
-
         Product product = productRepository.findById(
                 request.getProductId()
         ).orElseThrow(() -> new ResponseStatusException(
@@ -108,7 +90,6 @@ public class CartItemService {
                     "User with ID " + userId + " was not found."
             );
         }
-
         return cartItemRepository.findByUser_Id(userId)
                 .stream()
                 .map(this::toCartResponse)
@@ -175,5 +156,21 @@ public class CartItemService {
                         "Inventory was not found for product ID "
                                 + productId + "."
                 ));
+    }
+    private CartItemResponse toCartResponse(CartItem cartItem) {
+        CartItemResponse response = new CartItemResponse();
+        Product product = cartItem.getProduct();
+
+        response.setId(String.valueOf(cartItem.getId()));
+        response.setProductId(String.valueOf(product.getId()));
+        response.setProductName(product.getName());
+        response.setUnitPrice(product.getPrice());
+        response.setQuantity(cartItem.getQuantity());
+        response.setAmount(cartItem.getAmount());
+        response.setImageUrl(product.getImageUrl());
+        response.setCreatedAt(cartItem.getCreatedAt());
+        response.setUpdatedAt(cartItem.getUpdatedAt());
+
+        return response;
     }
 }

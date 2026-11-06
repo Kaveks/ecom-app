@@ -21,6 +21,6 @@ public class PaymentController {
             @Valid @RequestBody PaymentRequest request
     ) {
         paymentService.processPaymentCallback(orderId, request);
-        return ResponseEntity.ok("Payment callback processed successfully.");
+        return ResponseEntity.ok("Payment confirmed!.");
     }
 }
