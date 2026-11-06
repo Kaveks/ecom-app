@@ -1,0 +1,56 @@
+# Application Configuration
+# spring.application.name=ecom-app
+
+# PostgreSQL Database Configuration
+# spring.datasource.url=${DB_URL}
+# spring.datasource.username=${DB_USERNAME}
+# spring.datasource.password=${DB_PASSWORD}
+# spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA / Hibernate Configuration
+# spring.jpa.hibernate.ddl-auto=update
+# spring.jpa.show-sql=true
+# spring.jpa.properties.hibernate.format_sql=true
+
+# Order Reservation & Expiry Configuration
+# app.order.reservation-expiry-minutes=${ORDER_RESERVATION_EXPIRY_MINUTES:15}
+
+# Actuator Configuration
+# management.endpoints.web.exposure.include=*
+# management.endpoint.health.show-details=always
+
+# Application Configuration
+spring:
+  application:
+    name: ecom-app
+
+  # PostgreSQL Database Configuration
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA / Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Order Reservation & Expiry Configuration
+app:
+  order:
+    reservation-expiry-minutes: ${ORDER_RESERVATION_EXPIRY_MINUTES:15}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

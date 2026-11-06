@@ -33,3 +33,5 @@ build/
 .vscode/
 # Environment variables and secrets
 .env
+# docker
+dockerignore
